@@ -727,22 +727,17 @@
     /*
       PLANILHA GOOGLE SHEETS
 
-      Colunas esperadas:
-      Titulo | Data e Hora | Local | Descricao | Cor
+      Colunas recomendadas:
+      Titulo | Data Inicial | Data Final | Horario | Local | Descricao | Cor
 
-      Esta versão foi ajustada para o Google Sheets mesmo quando:
-      - a tabela não começa na célula A1;
-      - existem linhas vazias antes do cabeçalho;
-      - existem colunas vazias antes de Titulo;
-      - os cabeçalhos têm acento, maiúsculas/minúsculas ou espaços extras.
+      Regras de preenchimento:
+      - Evento de 1 dia: preencha Data Inicial e Data Final com a mesma data.
+      - Evento de vários dias: preencha Data Inicial com o começo e Data Final com o fim.
+      - Horario é opcional. Use 15:00 ou 15:00:00.
+      - Não precisa usar "Data e Hora".
 
-      Formatos aceitos na coluna Data e Hora:
-      - 20/05/2026
-      - 20/05/2026 09:00
-      - 20/05/2026 09:00:00
-      - 2026-05-20
-      - 2026-05-20 09:00
-      - 2026-05-20 09:00:00
+      Esta versão também tenta aceitar a coluna antiga "Data e Hora" por compatibilidade,
+      mas o padrão recomendado agora é Data Inicial + Data Final + Horario.
     */
 
     const SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRWKE7Gw6XiXQ-OKO7qGwDhZJJ0F4WY6C9k7skW75ER4-ftcXOhs3ni25MiT8-9B-CoXdnbxP8BKE9E/pub?output=csv";
@@ -750,24 +745,30 @@
     const fallbackEvents = [
       {
         Titulo: "Reunião ENAMED",
-        "Data e Hora": "2026-01-15 14:00",
+        "Data Inicial": "15/01/2026",
+        "Data Final": "15/01/2026",
+        Horario: "14:00",
         Local: "Sala 302",
         Descricao: "Alinhamento geral da agenda.",
         Cor: "azul"
       },
       {
         Titulo: "Aula prática",
-        "Data e Hora": "2026-01-16 08:00",
+        "Data Inicial": "16/01/2026",
+        "Data Final": "16/01/2026",
+        Horario: "08:00",
         Local: "UBS Petrolândia",
         Descricao: "Atividade prática com estudantes.",
         Cor: "verde"
       },
       {
-        Titulo: "Entrega de relatório",
-        "Data e Hora": "2026-01-20 17:00",
-        Local: "Online",
-        Descricao: "Prazo final para envio do relatório.",
-        Cor: "rosa"
+        Titulo: "Carnaval",
+        "Data Inicial": "14/02/2026",
+        "Data Final": "17/02/2026",
+        Horario: "",
+        Local: "Geral",
+        Descricao: "Recesso escolar e administrativo.",
+        Cor: "roxo"
       }
     ];
 
@@ -780,7 +781,11 @@
       laranja: "#ffc38f",
       vermelho: "#f59595",
       cinza: "#d7d1c1",
-      bege: "#eec7a7"
+      bege: "#eec7a7",
+      preto: "#b8b8b8",
+      branco: "#ffffff",
+      marrom: "#caa47a",
+      ciano: "#9ee7f2"
     };
 
     const monthNames = [
@@ -925,23 +930,65 @@
       return rows
         .map((row) => {
           const title = getField(row, ["Titulo", "Título", "titulo", "título"]);
-          const dateTime = getField(row, ["Data e Hora", "Data Hora", "Data", "data e hora"]);
+          const startValue = getField(row, ["Data Inicial", "Data Inicio", "Data Início", "Inicio", "Início", "Data"]);
+          const endValue = getField(row, ["Data Final", "Data Fim", "Fim"]);
+          const timeValue = getField(row, ["Horario", "Horário", "Hora"]);
+          const oldDateTimeValue = getField(row, ["Data e Hora", "Data Hora", "data e hora"]);
           const location = getField(row, ["Local", "local"]);
           const description = getField(row, ["Descricao", "Descrição", "descricao", "descrição"]);
           const color = getField(row, ["Cor", "cor"]);
-          const date = parseFlexibleDate(dateTime);
+
+          const startDate = parseEventStartDate(startValue, timeValue, oldDateTimeValue);
+          const endDate = parseEventEndDate(endValue, startDate);
+          const hasTime = Boolean(normalizeTime(timeValue)) || hasTimeInDateValue(oldDateTimeValue);
+
+          if (!(startDate instanceof Date) || isNaN(startDate)) {
+            return null;
+          }
+
+          const safeEndDate = endDate instanceof Date && !isNaN(endDate) && endDate >= startOfDay(startDate)
+            ? endDate
+            : new Date(startDate);
 
           return {
             title: title || "Sem título",
-            dateTime: dateTime || "",
+            dateTime: oldDateTimeValue || "",
+            startDate,
+            endDate: safeEndDate,
+            date: startDate,
+            time: normalizeTime(timeValue),
+            hasTime,
             location: location || "",
             description: description || "",
-            colorName: normalizeColorName(color || "rosa"),
-            date
+            colorName: normalizeColorName(color || "rosa")
           };
         })
-        .filter((event) => event.date instanceof Date && !isNaN(event.date))
-        .sort((a, b) => a.date - b.date);
+        .filter((event) => event !== null)
+        .sort((a, b) => a.startDate - b.startDate);
+    }
+
+    function parseEventStartDate(startValue, timeValue, oldDateTimeValue) {
+      if (startValue) {
+        return parseDateWithOptionalTime(startValue, timeValue);
+      }
+
+      if (oldDateTimeValue) {
+        return parseDateWithOptionalTime(oldDateTimeValue, "");
+      }
+
+      return null;
+    }
+
+    function parseEventEndDate(endValue, startDate) {
+      if (endValue) {
+        return parseDateWithOptionalTime(endValue, "");
+      }
+
+      if (startDate instanceof Date && !isNaN(startDate)) {
+        return new Date(startDate);
+      }
+
+      return null;
     }
 
     function getField(row, names) {
@@ -1005,7 +1052,7 @@
     function renderDaily() {
       periodTitle.textContent = `Diário - ${formatDateLong(currentDate)}`;
       const list = document.getElementById("dailyList");
-      const dayEvents = getFilteredEvents().filter((event) => isSameDay(event.date, currentDate));
+      const dayEvents = getFilteredEvents().filter((event) => eventOccursOnDate(event, currentDate));
 
       document.getElementById("dailyCount").textContent = dayEvents.length;
       document.getElementById("dailySummaryText").textContent = dayEvents.length === 1
@@ -1047,7 +1094,7 @@
       const column = document.createElement("article");
       column.className = "day-column";
 
-      const dayEvents = getFilteredEvents().filter((event) => isSameDay(event.date, date));
+      const dayEvents = getFilteredEvents().filter((event) => eventOccursOnDate(event, date));
 
       column.innerHTML = `
         <div class="day-header">
@@ -1127,7 +1174,7 @@
         cell.className = "month-day";
         if (date.getMonth() !== month) cell.classList.add("outside");
 
-        const dayEvents = getFilteredEvents().filter((event) => isSameDay(event.date, date));
+        const dayEvents = getFilteredEvents().filter((event) => eventOccursOnDate(event, date));
 
         cell.innerHTML = `<div class="day-number">${date.getDate()}</div>`;
 
@@ -1135,7 +1182,7 @@
           const item = document.createElement("div");
           item.className = "month-event";
           item.style.borderLeftColor = getColor(event.colorName);
-          item.innerHTML = `<strong>${escapeHtml(event.title)}</strong>${formatTime(event.date)} - ${escapeHtml(event.location)}`;
+          item.innerHTML = `<strong>${escapeHtml(event.title)}</strong>${formatEventCompact(event)}`;
           cell.appendChild(item);
         });
 
@@ -1198,9 +1245,7 @@
       const panel = document.createElement("article");
       panel.className = "month-panel";
 
-      const monthEvents = getFilteredEvents().filter((event) => {
-        return event.date.getMonth() === month && event.date.getFullYear() === year;
-      });
+      const monthEvents = getFilteredEvents().filter((event) => eventIntersectsMonth(event, month, year));
 
       panel.innerHTML = `
         <h3>${monthNames[month]}</h3>
@@ -1228,7 +1273,8 @@
           <span>${escapeHtml(event.title)}</span>
           <span class="badge" style="background:${getColor(event.colorName)}">${escapeHtml(event.colorName)}</span>
         </h3>
-        <p class="event-meta"><strong>Data e Hora:</strong> ${formatDateTime(event.date)}</p>
+        <p class="event-meta"><strong>Data:</strong> ${formatEventRange(event)}</p>
+        ${event.hasTime ? `<p class="event-meta"><strong>Horário:</strong> ${escapeHtml(formatEventTime(event))}</p>` : ""}
         <p class="event-meta"><strong>Local:</strong> ${escapeHtml(event.location || "Não informado")}</p>
         <p class="event-description">${escapeHtml(event.description || "Sem descrição.")}</p>
       `;
@@ -1243,7 +1289,7 @@
 
       item.innerHTML = `
         <strong>${escapeHtml(event.title)}</strong>
-        <span>${showDate ? formatDateShort(event.date) + " - " : ""}${formatTime(event.date)}</span>
+        <span>${showDate ? formatEventRange(event) : formatEventCompact(event)}</span>
         <span>${escapeHtml(event.location || "Local não informado")}</span>
       `;
 
@@ -1277,11 +1323,14 @@
         const normalizedCells = row.map((cell) => normalizeHeader(cell));
 
         return normalizedCells.includes("titulo") &&
-               normalizedCells.includes("data e hora");
+               (
+                 normalizedCells.includes("data inicial") ||
+                 normalizedCells.includes("data e hora")
+               );
       });
 
       if (headerIndex === -1) {
-        throw new Error("Não encontrei as colunas Titulo e Data e Hora na planilha publicada.");
+        throw new Error("Não encontrei as colunas Titulo e Data Inicial na planilha publicada.");
       }
 
       const headers = rows[headerIndex].map((header) => String(header || "").trim());
@@ -1347,27 +1396,121 @@
       return rows;
     }
 
-    function parseFlexibleDate(value) {
-      if (!value) return null;
+    function parseDateWithOptionalTime(dateValue, timeValue = "") {
+      if (!dateValue) return null;
 
-      const raw = String(value).trim();
+      const raw = String(dateValue).trim();
+      const normalizedTime = normalizeTime(timeValue);
 
       const brMatch = raw.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})(?:\s+(\d{1,2}):(\d{2})(?::(\d{2}))?)?$/);
       if (brMatch) {
-        const [, day, month, year, hour = "0", minute = "0", second = "0"] = brMatch;
-        return new Date(Number(year), Number(month) - 1, Number(day), Number(hour), Number(minute), Number(second));
+        const [, day, month, year, hourFromDate = "", minuteFromDate = "", secondFromDate = ""] = brMatch;
+        const timeParts = normalizedTime
+          ? normalizedTime.split(":")
+          : [hourFromDate || "0", minuteFromDate || "0", secondFromDate || "0"];
+
+        return new Date(
+          Number(year),
+          Number(month) - 1,
+          Number(day),
+          Number(timeParts[0] || 0),
+          Number(timeParts[1] || 0),
+          Number(timeParts[2] || 0)
+        );
       }
 
       const isoMatch = raw.match(/^(\d{4})-(\d{1,2})-(\d{1,2})(?:[ T](\d{1,2}):(\d{2})(?::(\d{2}))?)?$/);
       if (isoMatch) {
-        const [, year, month, day, hour = "0", minute = "0", second = "0"] = isoMatch;
-        return new Date(Number(year), Number(month) - 1, Number(day), Number(hour), Number(minute), Number(second));
+        const [, year, month, day, hourFromDate = "", minuteFromDate = "", secondFromDate = ""] = isoMatch;
+        const timeParts = normalizedTime
+          ? normalizedTime.split(":")
+          : [hourFromDate || "0", minuteFromDate || "0", secondFromDate || "0"];
+
+        return new Date(
+          Number(year),
+          Number(month) - 1,
+          Number(day),
+          Number(timeParts[0] || 0),
+          Number(timeParts[1] || 0),
+          Number(timeParts[2] || 0)
+        );
       }
 
       const isoAttempt = new Date(raw.replace(" ", "T"));
       if (!isNaN(isoAttempt)) return isoAttempt;
 
       return null;
+    }
+
+    function normalizeTime(value) {
+      if (!value) return "";
+
+      const text = String(value).trim();
+      const match = text.match(/^(\d{1,2}):(\d{2})(?::(\d{2}))?$/);
+
+      if (!match) return "";
+
+      const hour = String(match[1]).padStart(2, "0");
+      const minute = String(match[2]).padStart(2, "0");
+      const second = String(match[3] || "00").padStart(2, "0");
+
+      return `${hour}:${minute}:${second}`;
+    }
+
+    function hasTimeInDateValue(value) {
+      return /\d{1,2}:\d{2}/.test(String(value || ""));
+    }
+
+    function eventOccursOnDate(event, date) {
+      const target = startOfDay(date);
+      const start = startOfDay(event.startDate);
+      const end = startOfDay(event.endDate);
+
+      return target >= start && target <= end;
+    }
+
+    function eventIntersectsMonth(event, month, year) {
+      const monthStart = new Date(year, month, 1);
+      const monthEnd = new Date(year, month + 1, 0);
+
+      return startOfDay(event.startDate) <= monthEnd &&
+             startOfDay(event.endDate) >= monthStart;
+    }
+
+    function startOfDay(date) {
+      const result = new Date(date);
+      result.setHours(0, 0, 0, 0);
+      return result;
+    }
+
+    function isRangeEvent(event) {
+      return !isSameDay(event.startDate, event.endDate);
+    }
+
+    function formatEventRange(event) {
+      if (isRangeEvent(event)) {
+        return `${formatDateShort(event.startDate)} a ${formatDateShort(event.endDate)}`;
+      }
+
+      return formatDateShort(event.startDate);
+    }
+
+    function formatEventTime(event) {
+      if (!event.hasTime) return "";
+
+      return event.time
+        ? event.time.substring(0, 5)
+        : formatTime(event.startDate);
+    }
+
+    function formatEventCompact(event) {
+      const time = event.hasTime ? `${formatEventTime(event)} - ` : "";
+
+      if (isRangeEvent(event)) {
+        return `${time}${formatDateShort(event.startDate)} a ${formatDateShort(event.endDate)}`;
+      }
+
+      return `${time}${escapeHtml(event.location || "")}`;
     }
 
     function toInputDate(date) {
@@ -1418,10 +1561,6 @@
 
     function formatTime(date) {
       return date.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
-    }
-
-    function formatDateTime(date) {
-      return `${formatDateShort(date)} às ${formatTime(date)}`;
     }
 
     function escapeHtml(value) {
