@@ -1,0 +1,1439 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Agenda Medicina PUC Contagem</title>
+
+  <style>
+    :root {
+      --bg: #faf5ef;
+      --panel: #fffaf7;
+      --panel-2: #f8eeee;
+      --primary: #8d3c70;
+      --primary-2: #c783ac;
+      --line: #d8a5c4;
+      --text: #2d2530;
+      --muted: #746875;
+      --green-soft: #e8f7ef;
+      --yellow-soft: #fff8da;
+      --shadow: 0 14px 40px rgba(86, 49, 68, 0.12);
+      --radius: 18px;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background:
+        radial-gradient(circle at 10% 20%, rgba(216, 165, 196, 0.18), transparent 28%),
+        radial-gradient(circle at 90% 5%, rgba(241, 199, 167, 0.28), transparent 26%),
+        linear-gradient(135deg, #fffaf7 0%, var(--bg) 48%, #f7fbf6 100%);
+      font-family: Arial, Helvetica, sans-serif;
+      color: var(--text);
+      padding: 24px;
+    }
+
+    .app {
+      max-width: 1280px;
+      margin: 0 auto;
+      background: rgba(255, 250, 247, 0.92);
+      border: 1px solid rgba(216, 165, 196, 0.4);
+      border-radius: 28px;
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+
+    .header {
+      padding: 24px 28px;
+      background: linear-gradient(90deg, #f6d3c6, #f7e4df, #f9f1df);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 20px;
+      flex-wrap: wrap;
+    }
+
+    .brand-area {
+      display: flex;
+      align-items: center;
+      gap: 18px;
+      flex-wrap: wrap;
+    }
+
+    .brand-logo {
+      width: 96px;
+      height: auto;
+      object-fit: contain;
+      border-radius: 14px;
+      background: rgba(255, 255, 255, 0.42);
+      padding: 6px;
+    }
+
+    .title-area h1 {
+      margin: 0;
+      font-size: 34px;
+      color: var(--primary);
+      letter-spacing: 0.5px;
+    }
+
+    .title-area p {
+      margin: 6px 0 0;
+      color: var(--muted);
+      font-size: 15px;
+    }
+
+    .sheet-status {
+      background: rgba(255, 255, 255, 0.68);
+      border: 1px solid rgba(141, 60, 112, 0.22);
+      color: var(--primary);
+      padding: 10px 14px;
+      border-radius: 999px;
+      font-size: 14px;
+      white-space: nowrap;
+    }
+
+    .tabs {
+      display: flex;
+      gap: 10px;
+      padding: 16px 20px;
+      background: #fffaf7;
+      border-bottom: 1px solid rgba(216, 165, 196, 0.5);
+      overflow-x: auto;
+    }
+
+    .tab-btn,
+    .nav-btn,
+    .today-btn,
+    .print-btn {
+      border: 1px solid var(--line);
+      background: white;
+      color: var(--primary);
+      border-radius: 999px;
+      padding: 10px 16px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: 0.18s ease;
+      font-size: 14px;
+    }
+
+    .tab-btn:hover,
+    .nav-btn:hover,
+    .today-btn:hover,
+    .print-btn:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 8px 18px rgba(141, 60, 112, 0.14);
+    }
+
+    .tab-btn.active {
+      background: var(--primary);
+      color: white;
+      border-color: var(--primary);
+    }
+
+    .print-btn {
+      background: var(--primary);
+      color: white;
+      border-color: var(--primary);
+    }
+
+    .content {
+      padding: 24px;
+    }
+
+    .toolbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 14px;
+      flex-wrap: wrap;
+      margin-bottom: 18px;
+    }
+
+    .period-title {
+      margin: 0;
+      color: var(--primary);
+      font-size: 24px;
+    }
+
+    .toolbar-actions {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+
+    .date-input,
+    .select-input,
+    .search-input {
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      padding: 10px 14px;
+      background: white;
+      color: var(--text);
+      outline: none;
+      min-height: 40px;
+    }
+
+    .search-input {
+      min-width: 240px;
+    }
+
+    .view {
+      display: none;
+    }
+
+    .view.active {
+      display: block;
+    }
+
+    .daily-layout {
+      display: grid;
+      grid-template-columns: minmax(260px, 360px) 1fr;
+      gap: 18px;
+    }
+
+    .summary-card,
+    .empty-card {
+      background: var(--panel);
+      border: 1px solid rgba(216, 165, 196, 0.46);
+      border-radius: var(--radius);
+      padding: 18px;
+      min-height: 120px;
+    }
+
+    .summary-card h3 {
+      margin: 0 0 10px;
+      color: var(--primary);
+    }
+
+    .summary-number {
+      font-size: 46px;
+      color: var(--primary);
+      font-weight: 800;
+      margin: 10px 0;
+    }
+
+    .agenda-list {
+      display: grid;
+      gap: 12px;
+    }
+
+    .event-card {
+      background: white;
+      border: 1px solid rgba(216, 165, 196, 0.44);
+      border-left: 9px solid var(--primary-2);
+      border-radius: 16px;
+      padding: 13px 14px;
+      box-shadow: 0 8px 18px rgba(86, 49, 68, 0.06);
+    }
+
+    .event-title {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 10px;
+      margin: 0 0 7px;
+      font-size: 16px;
+      color: var(--text);
+    }
+
+    .event-meta {
+      margin: 0;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.45;
+    }
+
+    .event-description {
+      margin: 8px 0 0;
+      font-size: 14px;
+      line-height: 1.45;
+      color: #423744;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 999px;
+      padding: 4px 9px;
+      font-size: 11px;
+      font-weight: 700;
+      color: #332733;
+      background: #f6e8f0;
+      white-space: nowrap;
+    }
+
+    .week-grid {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(150px, 1fr)) 1.1fr;
+      gap: 8px;
+    }
+
+    .biweekly-grid {
+      display: grid;
+      gap: 18px;
+    }
+
+    .biweekly-week {
+      background: rgba(255, 255, 255, 0.58);
+      border: 1px solid rgba(216, 165, 196, 0.46);
+      border-radius: var(--radius);
+      padding: 14px;
+    }
+
+    .biweekly-week-title {
+      margin: 0 0 12px;
+      color: var(--primary);
+      font-size: 18px;
+    }
+
+    .biweekly-days {
+      display: grid;
+      grid-template-columns: repeat(7, minmax(120px, 1fr));
+      gap: 8px;
+    }
+
+    .biweekly-days .day-column {
+      min-height: 260px;
+    }
+
+    .weekend-stack {
+      display: grid;
+      grid-template-rows: 1fr 1fr;
+      gap: 8px;
+    }
+
+    .day-column {
+      background: rgba(255,255,255,0.86);
+      border: 1px solid var(--line);
+      border-radius: 17px;
+      overflow: hidden;
+      min-height: 390px;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .weekend-stack .day-column {
+      min-height: 190px;
+    }
+
+    .day-header {
+      background: #fff7fb;
+      border-bottom: 1px solid var(--line);
+      color: var(--primary);
+      font-weight: 800;
+      text-align: center;
+      padding: 9px;
+      font-size: 13px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .day-header small {
+      display: block;
+      color: var(--muted);
+      margin-top: 3px;
+      font-weight: 600;
+      text-transform: none;
+      letter-spacing: 0;
+    }
+
+    .day-body {
+      padding: 10px;
+      display: grid;
+      gap: 9px;
+      align-content: start;
+      flex: 1;
+    }
+
+    .mini-event {
+      border-left: 7px solid var(--primary-2);
+      background: white;
+      border-radius: 12px;
+      padding: 9px;
+      box-shadow: 0 4px 12px rgba(86, 49, 68, 0.06);
+    }
+
+    .mini-event strong {
+      display: block;
+      font-size: 13px;
+      margin-bottom: 4px;
+    }
+
+    .mini-event span {
+      display: block;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.35;
+    }
+
+    .calendar-grid {
+      display: grid;
+      grid-template-columns: repeat(7, minmax(120px, 1fr));
+      gap: 8px;
+    }
+
+    .weekday {
+      text-align: center;
+      color: var(--primary);
+      font-weight: 800;
+      font-size: 13px;
+      padding: 8px;
+    }
+
+    .month-day {
+      min-height: 132px;
+      background: rgba(255,255,255,0.86);
+      border: 1px solid rgba(91, 73, 102, 0.28);
+      border-radius: 13px;
+      padding: 8px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .month-day.outside {
+      opacity: 0.35;
+      background: #f7f2ee;
+    }
+
+    .day-number {
+      font-weight: 800;
+      color: var(--primary);
+      font-size: 13px;
+    }
+
+    .month-event {
+      border-left: 6px solid var(--primary-2);
+      background: #fff;
+      border-radius: 8px;
+      padding: 6px;
+      font-size: 11px;
+      line-height: 1.25;
+      box-shadow: 0 3px 8px rgba(86, 49, 68, 0.04);
+    }
+
+    .month-event strong {
+      display: block;
+      margin-bottom: 2px;
+    }
+
+    .period-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(230px, 1fr));
+      gap: 16px;
+    }
+
+    .semester-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(280px, 1fr));
+      gap: 16px;
+    }
+
+    .annual-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(220px, 1fr));
+      gap: 16px;
+    }
+
+    .month-panel {
+      background: rgba(255,255,255,0.86);
+      border: 1px solid rgba(216, 165, 196, 0.46);
+      border-radius: var(--radius);
+      overflow: hidden;
+      min-height: 220px;
+    }
+
+    .month-panel h3 {
+      margin: 0;
+      padding: 13px 15px;
+      background: #f4dfd1;
+      color: #211b22;
+      letter-spacing: 2px;
+      font-size: 14px;
+      text-transform: uppercase;
+      text-align: center;
+    }
+
+    .month-panel-body {
+      padding: 12px;
+      display: grid;
+      gap: 9px;
+    }
+
+    .empty-text {
+      color: var(--muted);
+      font-size: 13px;
+      text-align: center;
+      padding: 16px 6px;
+    }
+
+    .legend {
+      margin-top: 24px;
+      background: var(--green-soft);
+      border: 1px solid rgba(108, 158, 146, 0.42);
+      border-radius: var(--radius);
+      padding: 15px;
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+
+    .legend strong {
+      color: var(--primary);
+      margin-right: 6px;
+    }
+
+    .legend-item {
+      display: inline-flex;
+      gap: 6px;
+      align-items: center;
+      font-size: 13px;
+      color: var(--muted);
+    }
+
+    .dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      border: 1px solid rgba(0,0,0,0.12);
+      display: inline-block;
+    }
+
+    @media (max-width: 1050px) {
+      .week-grid,
+      .biweekly-days,
+      .period-grid,
+      .semester-grid,
+      .annual-grid,
+      .daily-layout {
+        grid-template-columns: 1fr;
+      }
+
+      .calendar-grid {
+        grid-template-columns: repeat(2, minmax(120px, 1fr));
+      }
+
+      .weekday {
+        display: none;
+      }
+    }
+
+    @media print {
+      @page {
+        size: A4 landscape;
+        margin: 12mm;
+      }
+
+      body {
+        background: white !important;
+        padding: 0 !important;
+        color: #111 !important;
+      }
+
+      .app {
+        max-width: 100% !important;
+        border: none !important;
+        border-radius: 0 !important;
+        box-shadow: none !important;
+        background: white !important;
+        overflow: visible !important;
+      }
+
+      .header {
+        background: white !important;
+        border-bottom: 1px solid #ddd !important;
+        padding: 0 0 10px 0 !important;
+      }
+
+      .brand-logo {
+        width: 64px !important;
+        background: white !important;
+        padding: 0 !important;
+      }
+
+      .title-area h1 {
+        color: #111 !important;
+        font-size: 22pt !important;
+      }
+
+      .title-area p,
+      .tabs,
+      .toolbar-actions,
+      .sheet-status,
+      .legend {
+        display: none !important;
+      }
+
+      .content {
+        padding: 14px 0 0 0 !important;
+      }
+
+      .toolbar {
+        display: block !important;
+        margin-bottom: 12px !important;
+      }
+
+      .period-title {
+        color: #111 !important;
+        font-size: 18pt !important;
+        margin: 0 0 12px 0 !important;
+      }
+
+      .view:not(.active) {
+        display: none !important;
+      }
+
+      .event-card,
+      .mini-event,
+      .month-day,
+      .month-panel,
+      .day-column {
+        break-inside: avoid;
+        page-break-inside: avoid;
+        box-shadow: none !important;
+      }
+    }
+
+    @media (max-width: 640px) {
+      body {
+        padding: 10px;
+      }
+
+      .content {
+        padding: 16px;
+      }
+
+      .header {
+        padding: 20px;
+      }
+
+      .title-area h1 {
+        font-size: 26px;
+      }
+
+      .calendar-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .search-input,
+      .date-input,
+      .select-input {
+        width: 100%;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <main class="app">
+    <header class="header">
+      <div class="brand-area">
+        <img src="puc-minas.png" alt="Símbolo da PUC Minas" class="brand-logo" />
+
+        <div class="title-area">
+          <h1>Agenda Medicina PUC Contagem</h1>
+          <p>Visualização diária, semanal, quinzenal, mensal, trimestral, semestral e anual.</p>
+        </div>
+      </div>
+
+      <div class="sheet-status" id="sheetStatus">Carregando agenda...</div>
+    </header>
+
+    <nav class="tabs" aria-label="Abas do planner">
+      <button class="tab-btn active" data-view="dailyView">Diário</button>
+      <button class="tab-btn" data-view="weeklyView">Semanal</button>
+      <button class="tab-btn" data-view="biweeklyView">Quinzenal</button>
+      <button class="tab-btn" data-view="monthlyView">Mensal</button>
+      <button class="tab-btn" data-view="quarterlyView">Trimestral</button>
+      <button class="tab-btn" data-view="semesterView">Semestral</button>
+      <button class="tab-btn" data-view="yearlyView">Anual</button>
+    </nav>
+
+    <section class="content">
+      <div class="toolbar">
+        <h2 class="period-title" id="periodTitle">Planner</h2>
+
+        <div class="toolbar-actions">
+          <input class="search-input" type="search" id="searchInput" placeholder="Pesquisar por título, local ou descrição" />
+          <input class="date-input" type="date" id="selectedDate" />
+          <button class="today-btn" id="todayBtn">Hoje</button>
+          <button class="nav-btn" id="prevBtn">Anterior</button>
+          <button class="nav-btn" id="nextBtn">Próximo</button>
+          <button class="print-btn" id="printBtn">Imprimir visualização</button>
+        </div>
+      </div>
+
+      <section id="dailyView" class="view active">
+        <div class="daily-layout">
+          <aside class="summary-card">
+            <h3>Resumo do dia</h3>
+            <div class="summary-number" id="dailyCount">0</div>
+            <p id="dailySummaryText">compromissos encontrados.</p>
+          </aside>
+          <div class="agenda-list" id="dailyList"></div>
+        </div>
+      </section>
+
+      <section id="weeklyView" class="view">
+        <div class="week-grid" id="weekGrid"></div>
+      </section>
+
+      <section id="biweeklyView" class="view">
+        <div class="biweekly-grid" id="biweeklyGrid"></div>
+      </section>
+
+      <section id="monthlyView" class="view">
+        <div class="calendar-grid" id="monthGrid"></div>
+      </section>
+
+      <section id="quarterlyView" class="view">
+        <div class="toolbar" style="margin-top: -6px;">
+          <select class="select-input" id="quarterSelect">
+            <option value="0">1º Trimestre - Jan / Fev / Mar</option>
+            <option value="1">2º Trimestre - Abr / Mai / Jun</option>
+            <option value="2">3º Trimestre - Jul / Ago / Set</option>
+            <option value="3">4º Trimestre - Out / Nov / Dez</option>
+          </select>
+        </div>
+        <div class="period-grid" id="quarterGrid"></div>
+      </section>
+
+      <section id="semesterView" class="view">
+        <div class="toolbar" style="margin-top: -6px;">
+          <select class="select-input" id="semesterSelect">
+            <option value="0">1º Semestre - Janeiro a Junho</option>
+            <option value="1">2º Semestre - Julho a Dezembro</option>
+          </select>
+        </div>
+        <div class="semester-grid" id="semesterGrid"></div>
+      </section>
+
+      <section id="yearlyView" class="view">
+        <div class="annual-grid" id="annualGrid"></div>
+      </section>
+
+      <div class="legend" id="legend"></div>
+    </section>
+  </main>
+
+  <script>
+    /*
+      PLANILHA GOOGLE SHEETS
+
+      Colunas esperadas:
+      Titulo | Data e Hora | Local | Descricao | Cor
+
+      Esta versão foi ajustada para o Google Sheets mesmo quando:
+      - a tabela não começa na célula A1;
+      - existem linhas vazias antes do cabeçalho;
+      - existem colunas vazias antes de Titulo;
+      - os cabeçalhos têm acento, maiúsculas/minúsculas ou espaços extras.
+
+      Formatos aceitos na coluna Data e Hora:
+      - 20/05/2026
+      - 20/05/2026 09:00
+      - 20/05/2026 09:00:00
+      - 2026-05-20
+      - 2026-05-20 09:00
+      - 2026-05-20 09:00:00
+    */
+
+    const SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRWKE7Gw6XiXQ-OKO7qGwDhZJJ0F4WY6C9k7skW75ER4-ftcXOhs3ni25MiT8-9B-CoXdnbxP8BKE9E/pub?output=csv";
+
+    const fallbackEvents = [
+      {
+        Titulo: "Reunião ENAMED",
+        "Data e Hora": "2026-01-15 14:00",
+        Local: "Sala 302",
+        Descricao: "Alinhamento geral da agenda.",
+        Cor: "azul"
+      },
+      {
+        Titulo: "Aula prática",
+        "Data e Hora": "2026-01-16 08:00",
+        Local: "UBS Petrolândia",
+        Descricao: "Atividade prática com estudantes.",
+        Cor: "verde"
+      },
+      {
+        Titulo: "Entrega de relatório",
+        "Data e Hora": "2026-01-20 17:00",
+        Local: "Online",
+        Descricao: "Prazo final para envio do relatório.",
+        Cor: "rosa"
+      }
+    ];
+
+    const colorMap = {
+      azul: "#8fd7ee",
+      verde: "#b7efab",
+      rosa: "#f7b9c4",
+      roxo: "#d9b8ff",
+      amarelo: "#ffe79a",
+      laranja: "#ffc38f",
+      vermelho: "#f59595",
+      cinza: "#d7d1c1",
+      bege: "#eec7a7"
+    };
+
+    const monthNames = [
+      "Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho",
+      "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"
+    ];
+
+    const shortWeekNames = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
+    const fullWeekNames = ["Domingo", "Segunda", "Terça", "Quarta", "Quinta", "Sexta", "Sábado"];
+
+    let events = [];
+    let currentView = "dailyView";
+    let currentDate = new Date();
+    currentDate.setHours(0, 0, 0, 0);
+
+    const selectedDate = document.getElementById("selectedDate");
+    const periodTitle = document.getElementById("periodTitle");
+    const sheetStatus = document.getElementById("sheetStatus");
+    const searchInput = document.getElementById("searchInput");
+    const quarterSelect = document.getElementById("quarterSelect");
+    const semesterSelect = document.getElementById("semesterSelect");
+
+    selectedDate.value = toInputDate(currentDate);
+
+    document.querySelectorAll(".tab-btn").forEach((button) => {
+      button.addEventListener("click", () => {
+        document.querySelectorAll(".tab-btn").forEach((btn) => btn.classList.remove("active"));
+        document.querySelectorAll(".view").forEach((view) => view.classList.remove("active"));
+
+        button.classList.add("active");
+        currentView = button.dataset.view;
+        document.getElementById(currentView).classList.add("active");
+        render();
+      });
+    });
+
+    selectedDate.addEventListener("change", () => {
+      currentDate = parseDateInput(selectedDate.value);
+      render();
+    });
+
+    searchInput.addEventListener("input", render);
+    quarterSelect.addEventListener("change", renderQuarterly);
+    semesterSelect.addEventListener("change", renderSemester);
+
+    document.getElementById("todayBtn").addEventListener("click", () => {
+      currentDate = new Date();
+      currentDate.setHours(0, 0, 0, 0);
+      selectedDate.value = toInputDate(currentDate);
+      render();
+    });
+
+    document.getElementById("prevBtn").addEventListener("click", () => {
+      navigate(-1);
+    });
+
+    document.getElementById("nextBtn").addEventListener("click", () => {
+      navigate(1);
+    });
+
+    document.getElementById("printBtn").addEventListener("click", () => {
+      printCurrentView();
+    });
+
+    function navigate(direction) {
+      const next = new Date(currentDate);
+
+      if (currentView === "dailyView") {
+        next.setDate(next.getDate() + direction);
+      }
+
+      if (currentView === "weeklyView") {
+        next.setDate(next.getDate() + direction * 7);
+      }
+
+      if (currentView === "biweeklyView") {
+        next.setDate(next.getDate() + direction * 14);
+      }
+
+      if (currentView === "monthlyView") {
+        next.setMonth(next.getMonth() + direction);
+      }
+
+      if (currentView === "quarterlyView") {
+        let value = Number(quarterSelect.value) + direction;
+        if (value < 0) value = 3;
+        if (value > 3) value = 0;
+        quarterSelect.value = String(value);
+      }
+
+      if (currentView === "semesterView") {
+        semesterSelect.value = semesterSelect.value === "0" ? "1" : "0";
+      }
+
+      if (currentView === "yearlyView") {
+        next.setFullYear(next.getFullYear() + direction);
+      }
+
+      if (currentView === "dailyView" || currentView === "weeklyView" || currentView === "biweeklyView" || currentView === "monthlyView" || currentView === "yearlyView") {
+        currentDate = next;
+        currentDate.setHours(0, 0, 0, 0);
+        selectedDate.value = toInputDate(currentDate);
+      }
+
+      render();
+    }
+
+    function printCurrentView() {
+      render();
+      const originalTitle = document.title;
+      document.title = `Agenda Medicina PUC Contagem - ${periodTitle.textContent}`;
+      window.print();
+      setTimeout(() => {
+        document.title = originalTitle;
+      }, 500);
+    }
+
+    async function loadEvents() {
+      try {
+        const separator = SHEET_CSV_URL.includes("?") ? "&" : "?";
+        const urlWithoutCache = `${SHEET_CSV_URL}${separator}_=${Date.now()}`;
+        const response = await fetch(urlWithoutCache, { cache: "no-store" });
+
+        if (!response.ok) {
+          throw new Error("Não foi possível acessar o CSV publicado.");
+        }
+
+        const csvText = await response.text();
+        const rows = csvToObjects(csvText);
+        events = normalizeEvents(rows);
+        sheetStatus.textContent = `${events.length} compromisso(s) carregado(s) da planilha`;
+      } catch (error) {
+        console.warn(error);
+        events = [];
+        sheetStatus.textContent = "Não foi possível carregar a planilha. Verifique o link CSV e os cabeçalhos.";
+      }
+
+      render();
+    }
+
+    function normalizeEvents(rows) {
+      return rows
+        .map((row) => {
+          const title = getField(row, ["Titulo", "Título", "titulo", "título"]);
+          const dateTime = getField(row, ["Data e Hora", "Data Hora", "Data", "data e hora"]);
+          const location = getField(row, ["Local", "local"]);
+          const description = getField(row, ["Descricao", "Descrição", "descricao", "descrição"]);
+          const color = getField(row, ["Cor", "cor"]);
+          const date = parseFlexibleDate(dateTime);
+
+          return {
+            title: title || "Sem título",
+            dateTime: dateTime || "",
+            location: location || "",
+            description: description || "",
+            colorName: normalizeColorName(color || "rosa"),
+            date
+          };
+        })
+        .filter((event) => event.date instanceof Date && !isNaN(event.date))
+        .sort((a, b) => a.date - b.date);
+    }
+
+    function getField(row, names) {
+      const normalizedNames = names.map((name) => normalizeHeader(name));
+
+      for (const [key, value] of Object.entries(row)) {
+        if (normalizedNames.includes(normalizeHeader(key)) && value !== undefined && value !== null && String(value).trim() !== "") {
+          return String(value).trim();
+        }
+      }
+
+      return "";
+    }
+
+    function normalizeHeader(value) {
+      return String(value || "")
+        .trim()
+        .toLowerCase()
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .replace(/\s+/g, " ");
+    }
+
+    function normalizeColorName(value) {
+      return String(value || "")
+        .trim()
+        .toLowerCase()
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "");
+    }
+
+    function getColor(value) {
+      const normalized = normalizeColorName(value);
+      return colorMap[normalized] || value || "#d8a5c4";
+    }
+
+    function render() {
+      if (currentView === "dailyView") renderDaily();
+      if (currentView === "weeklyView") renderWeekly();
+      if (currentView === "biweeklyView") renderBiweekly();
+      if (currentView === "monthlyView") renderMonthly();
+      if (currentView === "quarterlyView") renderQuarterly();
+      if (currentView === "semesterView") renderSemester();
+      if (currentView === "yearlyView") renderYearly();
+      renderLegend();
+    }
+
+    function getFilteredEvents() {
+      const term = searchInput.value.trim().toLowerCase();
+
+      if (!term) return events;
+
+      return events.filter((event) => {
+        return [event.title, event.location, event.description, event.colorName]
+          .join(" ")
+          .toLowerCase()
+          .includes(term);
+      });
+    }
+
+    function renderDaily() {
+      periodTitle.textContent = `Diário - ${formatDateLong(currentDate)}`;
+      const list = document.getElementById("dailyList");
+      const dayEvents = getFilteredEvents().filter((event) => isSameDay(event.date, currentDate));
+
+      document.getElementById("dailyCount").textContent = dayEvents.length;
+      document.getElementById("dailySummaryText").textContent = dayEvents.length === 1
+        ? "compromisso encontrado."
+        : "compromissos encontrados.";
+
+      list.innerHTML = "";
+
+      if (dayEvents.length === 0) {
+        list.innerHTML = `<div class="empty-card"><p class="empty-text">Nenhum compromisso encontrado para este dia.</p></div>`;
+        return;
+      }
+
+      dayEvents.forEach((event) => list.appendChild(createEventCard(event)));
+    }
+
+    function renderWeekly() {
+      const weekStart = getMonday(currentDate);
+      const weekEnd = addDays(weekStart, 6);
+      periodTitle.textContent = `Semanal - ${formatDateShort(weekStart)} a ${formatDateShort(weekEnd)}`;
+
+      const weekGrid = document.getElementById("weekGrid");
+      weekGrid.innerHTML = "";
+
+      const mondayToFriday = [0, 1, 2, 3, 4].map((offset) => addDays(weekStart, offset));
+      const weekend = [addDays(weekStart, 5), addDays(weekStart, 6)];
+
+      mondayToFriday.forEach((date) => {
+        weekGrid.appendChild(createDayColumn(date));
+      });
+
+      const weekendStack = document.createElement("div");
+      weekendStack.className = "weekend-stack";
+      weekend.forEach((date) => weekendStack.appendChild(createDayColumn(date)));
+      weekGrid.appendChild(weekendStack);
+    }
+
+    function createDayColumn(date) {
+      const column = document.createElement("article");
+      column.className = "day-column";
+
+      const dayEvents = getFilteredEvents().filter((event) => isSameDay(event.date, date));
+
+      column.innerHTML = `
+        <div class="day-header">
+          ${fullWeekNames[date.getDay()]}
+          <small>${formatDateShort(date)}</small>
+        </div>
+        <div class="day-body"></div>
+      `;
+
+      const body = column.querySelector(".day-body");
+
+      if (dayEvents.length === 0) {
+        body.innerHTML = `<div class="empty-text">Sem compromissos.</div>`;
+        return column;
+      }
+
+      dayEvents.forEach((event) => body.appendChild(createMiniEvent(event)));
+      return column;
+    }
+
+    function renderBiweekly() {
+      const firstWeekStart = getMonday(currentDate);
+      const secondWeekStart = addDays(firstWeekStart, 7);
+      const periodEnd = addDays(firstWeekStart, 13);
+      periodTitle.textContent = `Quinzenal - ${formatDateShort(firstWeekStart)} a ${formatDateShort(periodEnd)}`;
+
+      const biweeklyGrid = document.getElementById("biweeklyGrid");
+      biweeklyGrid.innerHTML = "";
+
+      const weeks = [
+        { title: "1ª Semana", start: firstWeekStart },
+        { title: "2ª Semana", start: secondWeekStart }
+      ];
+
+      weeks.forEach((week) => {
+        const wrapper = document.createElement("section");
+        wrapper.className = "biweekly-week";
+
+        const title = document.createElement("h3");
+        title.className = "biweekly-week-title";
+        title.textContent = `${week.title} - ${formatDateShort(week.start)} a ${formatDateShort(addDays(week.start, 6))}`;
+
+        const days = document.createElement("div");
+        days.className = "biweekly-days";
+
+        for (let i = 0; i < 7; i++) {
+          days.appendChild(createDayColumn(addDays(week.start, i)));
+        }
+
+        wrapper.appendChild(title);
+        wrapper.appendChild(days);
+        biweeklyGrid.appendChild(wrapper);
+      });
+    }
+
+    function renderMonthly() {
+      periodTitle.textContent = `Mensal - ${monthNames[currentDate.getMonth()]} de ${currentDate.getFullYear()}`;
+      const monthGrid = document.getElementById("monthGrid");
+      monthGrid.innerHTML = "";
+
+      shortWeekNames.forEach((name) => {
+        const weekday = document.createElement("div");
+        weekday.className = "weekday";
+        weekday.textContent = name;
+        monthGrid.appendChild(weekday);
+      });
+
+      const year = currentDate.getFullYear();
+      const month = currentDate.getMonth();
+      const firstDay = new Date(year, month, 1);
+      const start = new Date(firstDay);
+      start.setDate(start.getDate() - firstDay.getDay());
+
+      for (let i = 0; i < 42; i++) {
+        const date = addDays(start, i);
+        const cell = document.createElement("article");
+        cell.className = "month-day";
+        if (date.getMonth() !== month) cell.classList.add("outside");
+
+        const dayEvents = getFilteredEvents().filter((event) => isSameDay(event.date, date));
+
+        cell.innerHTML = `<div class="day-number">${date.getDate()}</div>`;
+
+        dayEvents.slice(0, 3).forEach((event) => {
+          const item = document.createElement("div");
+          item.className = "month-event";
+          item.style.borderLeftColor = getColor(event.colorName);
+          item.innerHTML = `<strong>${escapeHtml(event.title)}</strong>${formatTime(event.date)} - ${escapeHtml(event.location)}`;
+          cell.appendChild(item);
+        });
+
+        if (dayEvents.length > 3) {
+          const more = document.createElement("div");
+          more.className = "month-event";
+          more.textContent = `+${dayEvents.length - 3} compromisso(s)`;
+          cell.appendChild(more);
+        }
+
+        monthGrid.appendChild(cell);
+      }
+    }
+
+    function renderQuarterly() {
+      const quarter = Number(quarterSelect.value);
+      const startMonth = quarter * 3;
+      const endMonth = startMonth + 2;
+      const year = currentDate.getFullYear();
+
+      periodTitle.textContent = `Trimestral - ${monthNames[startMonth]} a ${monthNames[endMonth]} de ${year}`;
+
+      const quarterGrid = document.getElementById("quarterGrid");
+      quarterGrid.innerHTML = "";
+
+      for (let month = startMonth; month <= endMonth; month++) {
+        quarterGrid.appendChild(createMonthPanel(month, year));
+      }
+    }
+
+    function renderSemester() {
+      const semester = Number(semesterSelect.value);
+      const startMonth = semester === 0 ? 0 : 6;
+      const endMonth = semester === 0 ? 5 : 11;
+      const year = currentDate.getFullYear();
+
+      periodTitle.textContent = `Semestral - ${semester === 0 ? "1º" : "2º"} Semestre de ${year}`;
+
+      const semesterGrid = document.getElementById("semesterGrid");
+      semesterGrid.innerHTML = "";
+
+      for (let month = startMonth; month <= endMonth; month++) {
+        semesterGrid.appendChild(createMonthPanel(month, year));
+      }
+    }
+
+    function renderYearly() {
+      const year = currentDate.getFullYear();
+      periodTitle.textContent = `Anual - ${year}`;
+
+      const annualGrid = document.getElementById("annualGrid");
+      annualGrid.innerHTML = "";
+
+      for (let month = 0; month <= 11; month++) {
+        annualGrid.appendChild(createMonthPanel(month, year));
+      }
+    }
+
+    function createMonthPanel(month, year) {
+      const panel = document.createElement("article");
+      panel.className = "month-panel";
+
+      const monthEvents = getFilteredEvents().filter((event) => {
+        return event.date.getMonth() === month && event.date.getFullYear() === year;
+      });
+
+      panel.innerHTML = `
+        <h3>${monthNames[month]}</h3>
+        <div class="month-panel-body"></div>
+      `;
+
+      const body = panel.querySelector(".month-panel-body");
+
+      if (monthEvents.length === 0) {
+        body.innerHTML = `<div class="empty-text">Nenhum compromisso neste mês.</div>`;
+        return panel;
+      }
+
+      monthEvents.forEach((event) => body.appendChild(createMiniEvent(event, true)));
+      return panel;
+    }
+
+    function createEventCard(event) {
+      const card = document.createElement("article");
+      card.className = "event-card";
+      card.style.borderLeftColor = getColor(event.colorName);
+
+      card.innerHTML = `
+        <h3 class="event-title">
+          <span>${escapeHtml(event.title)}</span>
+          <span class="badge" style="background:${getColor(event.colorName)}">${escapeHtml(event.colorName)}</span>
+        </h3>
+        <p class="event-meta"><strong>Data e Hora:</strong> ${formatDateTime(event.date)}</p>
+        <p class="event-meta"><strong>Local:</strong> ${escapeHtml(event.location || "Não informado")}</p>
+        <p class="event-description">${escapeHtml(event.description || "Sem descrição.")}</p>
+      `;
+
+      return card;
+    }
+
+    function createMiniEvent(event, showDate = false) {
+      const item = document.createElement("div");
+      item.className = "mini-event";
+      item.style.borderLeftColor = getColor(event.colorName);
+
+      item.innerHTML = `
+        <strong>${escapeHtml(event.title)}</strong>
+        <span>${showDate ? formatDateShort(event.date) + " - " : ""}${formatTime(event.date)}</span>
+        <span>${escapeHtml(event.location || "Local não informado")}</span>
+      `;
+
+      return item;
+    }
+
+    function renderLegend() {
+      const legend = document.getElementById("legend");
+      const usedColors = [...new Set(events.map((event) => event.colorName))].filter(Boolean);
+
+      if (usedColors.length === 0) {
+        legend.innerHTML = `<strong>Cores:</strong> Nenhuma cor cadastrada.`;
+        return;
+      }
+
+      legend.innerHTML = `<strong>Cores:</strong>`;
+
+      usedColors.forEach((colorName) => {
+        const item = document.createElement("span");
+        item.className = "legend-item";
+        item.innerHTML = `<span class="dot" style="background:${getColor(colorName)}"></span>${escapeHtml(colorName)}`;
+        legend.appendChild(item);
+      });
+    }
+
+    function csvToObjects(csvText) {
+      const rows = parseCsv(csvText);
+      if (rows.length === 0) return [];
+
+      const headerIndex = rows.findIndex((row) => {
+        const normalizedCells = row.map((cell) => normalizeHeader(cell));
+
+        return normalizedCells.includes("titulo") &&
+               normalizedCells.includes("data e hora");
+      });
+
+      if (headerIndex === -1) {
+        throw new Error("Não encontrei as colunas Titulo e Data e Hora na planilha publicada.");
+      }
+
+      const headers = rows[headerIndex].map((header) => String(header || "").trim());
+
+      return rows.slice(headerIndex + 1)
+        .filter((row) => row.some((cell) => String(cell || "").trim() !== ""))
+        .map((row) => {
+          const object = {};
+
+          headers.forEach((header, index) => {
+            if (!header) return;
+            object[header] = row[index] || "";
+          });
+
+          return object;
+        });
+    }
+
+    function parseCsv(text) {
+      const rows = [];
+      let row = [];
+      let value = "";
+      let insideQuotes = false;
+
+      for (let i = 0; i < text.length; i++) {
+        const char = text[i];
+        const next = text[i + 1];
+
+        if (char === '"' && insideQuotes && next === '"') {
+          value += '"';
+          i++;
+          continue;
+        }
+
+        if (char === '"') {
+          insideQuotes = !insideQuotes;
+          continue;
+        }
+
+        if (char === "," && !insideQuotes) {
+          row.push(value);
+          value = "";
+          continue;
+        }
+
+        if ((char === "\n" || char === "\r") && !insideQuotes) {
+          if (char === "\r" && next === "\n") i++;
+          row.push(value);
+          rows.push(row);
+          row = [];
+          value = "";
+          continue;
+        }
+
+        value += char;
+      }
+
+      if (value.length > 0 || row.length > 0) {
+        row.push(value);
+        rows.push(row);
+      }
+
+      return rows;
+    }
+
+    function parseFlexibleDate(value) {
+      if (!value) return null;
+
+      const raw = String(value).trim();
+
+      const brMatch = raw.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})(?:\s+(\d{1,2}):(\d{2})(?::(\d{2}))?)?$/);
+      if (brMatch) {
+        const [, day, month, year, hour = "0", minute = "0", second = "0"] = brMatch;
+        return new Date(Number(year), Number(month) - 1, Number(day), Number(hour), Number(minute), Number(second));
+      }
+
+      const isoMatch = raw.match(/^(\d{4})-(\d{1,2})-(\d{1,2})(?:[ T](\d{1,2}):(\d{2})(?::(\d{2}))?)?$/);
+      if (isoMatch) {
+        const [, year, month, day, hour = "0", minute = "0", second = "0"] = isoMatch;
+        return new Date(Number(year), Number(month) - 1, Number(day), Number(hour), Number(minute), Number(second));
+      }
+
+      const isoAttempt = new Date(raw.replace(" ", "T"));
+      if (!isNaN(isoAttempt)) return isoAttempt;
+
+      return null;
+    }
+
+    function toInputDate(date) {
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, "0");
+      const day = String(date.getDate()).padStart(2, "0");
+      return `${year}-${month}-${day}`;
+    }
+
+    function parseDateInput(value) {
+      const [year, month, day] = value.split("-").map(Number);
+      return new Date(year, month - 1, day);
+    }
+
+    function getMonday(date) {
+      const result = new Date(date);
+      const day = result.getDay();
+      const diff = day === 0 ? -6 : 1 - day;
+      result.setDate(result.getDate() + diff);
+      result.setHours(0, 0, 0, 0);
+      return result;
+    }
+
+    function addDays(date, amount) {
+      const result = new Date(date);
+      result.setDate(result.getDate() + amount);
+      return result;
+    }
+
+    function isSameDay(a, b) {
+      return a.getFullYear() === b.getFullYear()
+        && a.getMonth() === b.getMonth()
+        && a.getDate() === b.getDate();
+    }
+
+    function formatDateShort(date) {
+      return date.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", year: "numeric" });
+    }
+
+    function formatDateLong(date) {
+      return date.toLocaleDateString("pt-BR", {
+        weekday: "long",
+        day: "2-digit",
+        month: "long",
+        year: "numeric"
+      });
+    }
+
+    function formatTime(date) {
+      return date.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
+    }
+
+    function formatDateTime(date) {
+      return `${formatDateShort(date)} às ${formatTime(date)}`;
+    }
+
+    function escapeHtml(value) {
+      return String(value)
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+    }
+
+    loadEvents();
+  </script>
+</body>
+</html>
