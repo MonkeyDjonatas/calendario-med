@@ -938,9 +938,12 @@
           const description = getField(row, ["Descricao", "Descrição", "descricao", "descrição"]);
           const color = getField(row, ["Cor", "cor"]);
 
+          const normalizedTime = normalizeTime(timeValue);
+          const timeText = normalizeTimeText(timeValue);
+
           const startDate = parseEventStartDate(startValue, timeValue, oldDateTimeValue);
           const endDate = parseEventEndDate(endValue, startDate);
-          const hasTime = Boolean(normalizeTime(timeValue)) || hasTimeInDateValue(oldDateTimeValue);
+          const hasTime = Boolean(timeText || normalizedTime) || hasTimeInDateValue(oldDateTimeValue);
 
           if (!(startDate instanceof Date) || isNaN(startDate)) {
             return null;
@@ -956,7 +959,8 @@
             startDate,
             endDate: safeEndDate,
             date: startDate,
-            time: normalizeTime(timeValue),
+            time: normalizedTime,
+            timeText,
             hasTime,
             location: location || "",
             description: description || "",
@@ -1446,7 +1450,13 @@
       if (!value) return "";
 
       const text = String(value).trim();
-      const match = text.match(/^(\d{1,2}):(\d{2})(?::(\d{2}))?$/);
+
+      // Aceita horários simples e intervalos, por exemplo:
+      // 14:00
+      // 14:00:00
+      // 14:00 às 15:30
+      // 14:00 as 15:30
+      const match = text.match(/(\d{1,2}):(\d{2})(?::(\d{2}))?/);
 
       if (!match) return "";
 
@@ -1455,6 +1465,26 @@
       const second = String(match[3] || "00").padStart(2, "0");
 
       return `${hour}:${minute}:${second}`;
+    }
+
+    function normalizeTimeText(value) {
+      if (!value) return "";
+
+      const text = String(value).trim();
+      const matches = text.match(/\d{1,2}:\d{2}(?::\d{2})?/g);
+
+      if (!matches || matches.length === 0) return "";
+
+      const times = matches.map((time) => {
+        const [hour, minute] = time.split(":");
+        return `${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}`;
+      });
+
+      if (times.length >= 2) {
+        return `${times[0]} às ${times[1]}`;
+      }
+
+      return times[0];
     }
 
     function hasTimeInDateValue(value) {
@@ -1498,9 +1528,11 @@
     function formatEventTime(event) {
       if (!event.hasTime) return "";
 
-      return event.time
-        ? event.time.substring(0, 5)
-        : formatTime(event.startDate);
+      return event.timeText
+        ? event.timeText
+        : event.time
+          ? event.time.substring(0, 5)
+          : formatTime(event.startDate);
     }
 
     function formatEventCompact(event) {
